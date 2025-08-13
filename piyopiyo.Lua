@@ -6,13 +6,22 @@ local Window = Rayfield:CreateWindow({
    LoadingSubtitle = "作者 najayou777",
    ConfigurationSaving = {
       Enabled = true,
-      FolderName = nil, -- Create a custom folder for your hub/game
+      FolderName = nil,
       FileName = "MyHub"
    },
 })
 
-local MainTab = Window:CreateTab("プレイヤー", nil) -- Title, Image
+local MainTab = Window:CreateTab("プレイヤー", nil)
 local MainSection = MainTab:CreateSection("スピード")
+
+-- プレイヤー取得
+local player = game.Players.LocalPlayer
+
+-- Humanoid取得関数
+local function getHumanoid()
+    local char = player.Character or player.CharacterAdded:Wait()
+    return char:WaitForChild("Humanoid")
+end
 
 local Slider = MainTab:CreateSlider({
    Name = "プレイヤースピード",
@@ -20,9 +29,12 @@ local Slider = MainTab:CreateSlider({
    Increment = 1,
    Suffix = "Speed",
    CurrentValue = 16,
-   Flag = "Slider1", -- A flag is the identifier for the configuration file, make sure every element has a different flag if you're using configuration saving to ensure no overlaps
+   Flag = "Slider1",
    Callback = function(Value)
-        Game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = (value)
+        local humanoid = getHumanoid()
+        if humanoid then
+            humanoid.WalkSpeed = Value
+        end
    end,
 })
 
