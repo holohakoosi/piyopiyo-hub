@@ -23,12 +23,11 @@ local Section = Tab:CreateSection("プレイヤー操作")
 local player = game.Players.LocalPlayer
 local defaultSpeed = 16
 
--- Humanoidを安全に取得
+-- Humanoidを安全に取得（Characterがロードされるまで待機）
 local function getHumanoid()
-    if player and player.Character then
-        return player.Character:FindFirstChildOfClass("Humanoid")
-    end
-    return nil
+    if not player then return nil end
+    local char = player.Character or player.CharacterAdded:Wait()
+    return char:WaitForChild("Humanoid")
 end
 
 -- スライダー作成
@@ -47,8 +46,8 @@ local SpeedToggle = Tab:CreateToggle({
     CurrentValue = false,
     Flag = "SpeedToggle",
     Callback = function(State)
-        local humanoid = getHumanoid()
-        if humanoid then
+        local success, humanoid = pcall(getHumanoid)
+        if success and humanoid then
             humanoid.WalkSpeed = State and SpeedSlider.CurrentValue or defaultSpeed
         end
     end,
@@ -56,8 +55,8 @@ local SpeedToggle = Tab:CreateToggle({
 
 -- スライダー変更時
 SpeedSlider:OnChanged(function(Value)
-    local humanoid = getHumanoid()
-    if humanoid and SpeedToggle.CurrentValue then
+    local success, humanoid = pcall(getHumanoid)
+    if success and humanoid and SpeedToggle.CurrentValue then
         humanoid.WalkSpeed = Value
     end
 end)
