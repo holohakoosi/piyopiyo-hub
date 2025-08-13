@@ -1,36 +1,29 @@
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
-   Name = "ぴよぴよスクリプト",
-   Icon = 0,
-   LoadingTitle = "Rayfield piyopiyo hub",
-   LoadingSubtitle = "作者 najayou777",
-   Theme = "Default",
-   DisableRayfieldPrompts = false,
-   DisableBuildWarnings = false,
-
-   ConfigurationSaving = {
-      Enabled = true,
-      FolderName = nil,
-      FileName = "Big Hub"
-   },
-
-   Discord = {
-      Enabled = false,
-      Invite = "noinvitelink",
-      RememberJoins = true
-   },
-
-   KeySystem = false,
+    Name = "ぴよぴよスクリプト",
+    Icon = 0,
+    LoadingTitle = "Rayfield piyopiyo hub",
+    LoadingSubtitle = "作者 najayou777",
+    Theme = "Default",
+    DisableRayfieldPrompts = false,
+    DisableBuildWarnings = false,
+    ConfigurationSaving = {
+        Enabled = true,
+        FolderName = nil,
+        FileName = "Big Hub"
+    },
+    Discord = {Enabled=false},
+    KeySystem = false
 })
 
 local Tab = Window:CreateTab("プレイヤー", 4483362458)
 local Section = Tab:CreateSection("プレイヤー操作")
 
 local player = game.Players.LocalPlayer
-local defaultSpeed = 16 -- デフォルト速度
+local defaultSpeed = 16
 
--- Humanoidを安全に取得する関数
+-- Humanoidを安全に取得
 local function getHumanoid()
     if player and player.Character then
         return player.Character:FindFirstChildOfClass("Humanoid")
@@ -56,11 +49,7 @@ local SpeedToggle = Tab:CreateToggle({
     Callback = function(State)
         local humanoid = getHumanoid()
         if humanoid then
-            if State then
-                humanoid.WalkSpeed = SpeedSlider.CurrentValue
-            else
-                humanoid.WalkSpeed = defaultSpeed
-            end
+            humanoid.WalkSpeed = State and SpeedSlider.CurrentValue or defaultSpeed
         end
     end,
 })
@@ -68,7 +57,7 @@ local SpeedToggle = Tab:CreateToggle({
 -- スライダー変更時
 SpeedSlider:OnChanged(function(Value)
     local humanoid = getHumanoid()
-    if SpeedToggle.CurrentValue and humanoid then
+    if humanoid and SpeedToggle.CurrentValue then
         humanoid.WalkSpeed = Value
     end
 end)
@@ -76,12 +65,7 @@ end)
 -- Character生成時の対応
 player.CharacterAdded:Connect(function(char)
     local humanoid = char:WaitForChild("Humanoid")
-    if SpeedToggle.CurrentValue then
-        humanoid.WalkSpeed = SpeedSlider.CurrentValue
-    else
-        humanoid.WalkSpeed = defaultSpeed
-    end
+    humanoid.WalkSpeed = SpeedToggle.CurrentValue and SpeedSlider.CurrentValue or defaultSpeed
 end)
 
--- 設定の読み込み
 Rayfield:LoadConfiguration()
