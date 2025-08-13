@@ -55,9 +55,12 @@ local SpeedToggle = Tab:CreateToggle({
 
 -- スライダー変更時
 SpeedSlider:OnChanged(function(Value)
-    local success, humanoid = pcall(getHumanoid)
-    if success and humanoid and SpeedToggle.CurrentValue then
-        humanoid.WalkSpeed = Value
+    local char = player.Character
+    if char then
+        local humanoid = char:FindFirstChildOfClass("Humanoid")
+        if humanoid and SpeedToggle.CurrentValue then
+            humanoid.WalkSpeed = Value
+        end
     end
 end)
 
