@@ -38,11 +38,43 @@ local Tab = Window:CreateTab("プレイヤー", 4483362458) -- Title, Image
 
 local Section = Tab:CreateSection("Section Example")
 
-local Button = Tab:CreateButton({
-   Name = "Button Example",
-   Callback = function()
-   -- The function that takes place when the button is pressed
-   end,
+-- プレイヤータブにスライダーを追加
+local SpeedSlider = Tab:CreateSlider({
+    Name = "プレイヤースピード",
+    Range = {16, 500},
+    Increment = 1,
+    Suffix = " スピード",
+    CurrentValue = 16,
+    Flag = "PlayerSpeed",
 })
 
+-- ON/OFFトグル
+local SpeedToggle = Tab:CreateToggle({
+    Name = "スピード適用",
+    CurrentValue = false,
+    Flag = "SpeedToggle",
+    Callback = function(State)
+        local player = game.Players.LocalPlayer
+        if player and player.Character and player.Character:FindFirstChild("Humanoid") then
+            if State then
+                -- トグルONならスライダー値を適用
+                player.Character.Humanoid.WalkSpeed = SpeedSlider.CurrentValue
+            else
+                -- トグルOFFならデフォルト速度に戻す
+                player.Character.Humanoid.WalkSpeed = 16
+            end
+        end
+    end,
+})
+
+-- スライダー値変更時の処理
+SpeedSlider:OnChanged(function(Value)
+    local player = game.Players.LocalPlayer
+    -- トグルがONのときだけ適用
+    if SpeedToggle.CurrentValue and player and player.Character and player.Character:FindFirstChild("Humanoid") then
+        player.Character.Humanoid.WalkSpeed = Value
+    end
+end)
+
+-- 設定をロード
 Rayfield:LoadConfiguration()
