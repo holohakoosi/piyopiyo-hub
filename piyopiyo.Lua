@@ -12,7 +12,7 @@ local Window = Rayfield:CreateWindow({
 })
 
 local MainTab = Window:CreateTab("プレイヤー", nil) -- Title, Image
-local MainSection = MainTab:CreateSection("Main")
+local MainSection = MainTab:CreateSection("スピード")
 
 Rayfield:Notify({
    Title = "You executed the script gui from Mer",
