@@ -40,3 +40,5 @@ local Slider = MainTab:CreateSlider({
         Game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = (value)
    end,
 })
+
+local Divider = Tab:CreateDivider()
