@@ -41,4 +41,4 @@ local Slider = MainTab:CreateSlider({
    end,
 })
 
-local Divider = Tab:CreateDivider()
+Rayfield:LoadConfiguration()
