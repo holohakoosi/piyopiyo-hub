@@ -16,54 +16,44 @@ local Window = Rayfield:CreateWindow({
 local Tab = Window:CreateTab("プレイヤー", 4483362458)
 local Section = Tab:CreateSection("プレイヤー操作")
 
-local player = game.Players.LocalPlayer
-local defaultSpeed = 16
-
--- スライダー作成
-local SpeedSlider = Tab:CreateSlider({
-    Name = "プレイヤースピード",
-    Range = {16, 500},
-    Increment = 1,
-    Suffix = " スピード",
-    CurrentValue = 16,
-    Flag = "PlayerSpeed",
-})
-
--- トグル作成
-local SpeedToggle = Tab:CreateToggle({
-    Name = "スピード適用",
+-- トグルを作成
+local speedToggle = Tab:CreateToggle({
+    Name = "速度変更オン",
     CurrentValue = false,
     Flag = "SpeedToggle",
-    Callback = function(State)
-        local char = player.Character
-        if char then
-            local humanoid = char:FindFirstChildOfClass("Humanoid")
-            if humanoid then
-                humanoid.WalkSpeed = State and SpeedSlider.CurrentValue or defaultSpeed
-            end
+    Callback = function(value)
+        -- トグルがオンのときだけスライダーで反映されるようにする
+        if value then
+            humanoid.WalkSpeed = Tab.Flags.SpeedSlider
+        else
+            humanoid.WalkSpeed = 16 -- デフォルト速度に戻す
         end
-    end,
+    end
 })
 
--- スライダー変更時
-SpeedSlider:OnChanged(function(Value)
-    local char = player.Character
-    if char and SpeedToggle.CurrentValue then
-        local humanoid = char:FindFirstChildOfClass("Humanoid")
-        if humanoid then
-            humanoid.WalkSpeed = Value
+-- スライダーを作成
+local speedSlider = Tab:CreateSlider({
+    Name = "移動速度",
+    Range = {16, 200}, -- デフォルト16
+    Increment = 1,
+    Suffix = "スピード",
+    CurrentValue = 16,
+    Flag = "SpeedSlider",
+    Callback = function(value)
+        -- トグルがオンのときだけ適用
+        if speedToggle.CurrentValue then
+            humanoid.WalkSpeed = value
         end
     end
-end)
+})
 
--- リスポーン時も反映
+-- プレイヤーのHumanoidを取得
+local player = game.Players.LocalPlayer
+local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+
+-- キャラクターがリスポーンしたときもHumanoidを更新
 player.CharacterAdded:Connect(function(char)
-    local humanoid = char:WaitForChild("Humanoid")
-    if SpeedToggle.CurrentValue then
-        humanoid.WalkSpeed = SpeedSlider.CurrentValue
-    else
-        humanoid.WalkSpeed = defaultSpeed
-    end
+    humanoid = char:WaitForChild("Humanoid")
 end)
 
 Rayfield:LoadConfiguration()
