@@ -1,78 +1,73 @@
--- Roblox Fly Script (カメラ方向に飛べる版)
 local player = game.Players.LocalPlayer
-local character = player.Character or player.CharacterAdded:Wait()
-local humanoid = character:WaitForChild("Humanoid")
-local hrp = character:WaitForChild("HumanoidRootPart")
-local camera = game.Workspace.CurrentCamera
+local camera = workspace.CurrentCamera
+local uis = game:GetService("UserInputService")
+local runService = game:GetService("RunService")
 
 local flying = false
 local speed = 50
-local moveForward = false
 
--- UI
-local screenGui = Instance.new("ScreenGui", player.PlayerGui)
+-- Fly ON/OFF トグル
+local function toggleFly()
+	flying = not flying
+	if not flying then
+		player.Character:WaitForChild("Humanoid").PlatformStand = false
+	end
+end
 
--- Fly ON/OFF ボタン
-local flyButton = Instance.new("TextButton", screenGui)
-flyButton.Size = UDim2.new(0, 100, 0, 50)
-flyButton.Position = UDim2.new(0.05, 0, 0.8, 0)
-flyButton.Text = "Fly: OFF"
-flyButton.BackgroundColor3 = Color3.fromRGB(100, 100, 255)
-flyButton.TextScaled = true
+-- スマホUIボタン作成
+local gui = Instance.new("ScreenGui", player.PlayerGui)
+local btn = Instance.new("TextButton", gui)
+btn.Size = UDim2.new(0, 100, 0, 50)
+btn.Position = UDim2.new(0.05, 0, 0.8, 0)
+btn.Text = "Fly OFF"
+btn.MouseButton1Click:Connect(function()
+	toggleFly()
+	btn.Text = flying and "Fly ON" or "Fly OFF"
+end)
 
 -- スピードスライダー
-local sliderFrame = Instance.new("Frame", screenGui)
+local sliderFrame = Instance.new("Frame", gui)
 sliderFrame.Size = UDim2.new(0, 200, 0, 40)
 sliderFrame.Position = UDim2.new(0.05, 0, 0.7, 0)
 sliderFrame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-
 local sliderBar = Instance.new("Frame", sliderFrame)
 sliderBar.Size = UDim2.new(0.5, 0, 1, 0)
 sliderBar.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
 
--- ボタンでFly切り替え
-flyButton.MouseButton1Click:Connect(function()
-	flying = not flying
-	if flying then
-		flyButton.Text = "Fly: ON"
-		humanoid.PlatformStand = true
-	else
-		flyButton.Text = "Fly: OFF"
-		humanoid.PlatformStand = false
-		hrp.Velocity = Vector3.zero
-	end
-end)
-
--- スライダーで速度変更
 local dragging = false
-sliderFrame.InputBegan:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+sliderFrame.InputBegan:Connect(function(i)
+	if i.UserInputType == Enum.UserInputType.Touch or i.UserInputType == Enum.UserInputType.MouseButton1 then
 		dragging = true
 	end
 end)
-sliderFrame.InputEnded:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+sliderFrame.InputEnded:Connect(function(i)
+	if i.UserInputType == Enum.UserInputType.Touch or i.UserInputType == Enum.UserInputType.MouseButton1 then
 		dragging = false
 	end
 end)
-game:GetService("UserInputService").InputChanged:Connect(function(input)
-	if dragging and (input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseMovement) then
-		local relativeX = math.clamp((input.Position.X - sliderFrame.AbsolutePosition.X) / sliderFrame.AbsoluteSize.X, 0, 1)
-		sliderBar.Size = UDim2.new(relativeX, 0, 1, 0)
-		speed = 20 + (relativeX * 180)
+uis.InputChanged:Connect(function(i)
+	if dragging and (i.UserInputType == Enum.UserInputType.Touch or i.UserInputType == Enum.UserInputType.MouseMovement) then
+		local ratio = math.clamp((i.Position.X - sliderFrame.AbsolutePosition.X) / sliderFrame.AbsoluteSize.X, 0, 1)
+		sliderBar.Size = UDim2.new(ratio, 0, 1, 0)
+		speed = 20 + (ratio * 180)
 	end
 end)
 
--- 移動処理（カメラの向いている方向に進む）
-game:GetService("RunService").RenderStepped:Connect(function()
+-- Fly挙動
+runService.RenderStepped:Connect(function()
 	if flying then
-		local moveDir = humanoid.MoveDirection
-		if moveDir.Magnitude > 0 then
-			local camDir = camera.CFrame.LookVector -- カメラの向き
-			hrp.CFrame = CFrame.new(hrp.Position, hrp.Position + camDir) -- 向き変更
-			hrp.Velocity = camDir * speed
-		else
-			hrp.Velocity = Vector3.zero
+		local moveVec = Vector3.new()
+		local hum = player.Character:FindFirstChild("Humanoid")
+
+		if hum then
+			hum.PlatformStand = true -- 重力無効化
 		end
+
+		-- デフォルト移動入力（WASDやジョイスティック）
+		moveVec = player.Character:WaitForChild("Humanoid").MoveDirection
+
+		-- カメラ方向に変換
+		local camDir = camera.CFrame:VectorToWorldSpace(moveVec)
+		player.Character:WaitForChild("HumanoidRootPart").Velocity = camDir * speed
 	end
 end)
