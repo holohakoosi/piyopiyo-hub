@@ -1,77 +1,149 @@
--- スマホ向け vfly（IY風簡易版）
-local player = game.Players.LocalPlayer
-local char = player.Character or player.CharacterAdded:Wait()
-local hrp = char:WaitForChild("HumanoidRootPart")
-local cam = workspace.CurrentCamera
-local runService = game:GetService("RunService")
+-- Orion UI読み込み
+local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/shlexware/Orion/main/source')))()
 
+-- ウィンドウ作成
+local Window = OrionLib:MakeWindow({Name = "ぴよぴよ ハブ", HidePremium = false, IntroText = "by najayou777", SaveConfig = false})
+
+-- プレイヤー設定
+local player = game.Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local hrp = character:WaitForChild("HumanoidRootPart")
 local flying = false
 local speed = 50
-local velocity = Vector3.zero
+local bv
 
--- UI作成
-local gui = Instance.new("ScreenGui", player.PlayerGui)
+-- 仮想ジョイスティックを作る（ScreenGui + Frame + Input）
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Parent = player:WaitForChild("PlayerGui")
 
--- Flyボタン
-local flyBtn = Instance.new("TextButton", gui)
-flyBtn.Size = UDim2.new(0,100,0,50)
-flyBtn.Position = UDim2.new(0.05,0,0.8,0)
-flyBtn.Text = "Fly: OFF"
-flyBtn.TextScaled = true
-flyBtn.BackgroundColor3 = Color3.fromRGB(100,100,255)
-flyBtn.MouseButton1Click:Connect(function()
-	flying = not flying
-	flyBtn.Text = flying and "Fly: ON" or "Fly: OFF"
-	if not flying then velocity = Vector3.zero hrp.Velocity = Vector3.zero end
-end)
+local joystickBase = Instance.new("Frame")
+joystickBase.Size = UDim2.new(0,150,0,150)
+joystickBase.Position = UDim2.new(0,50,1,-200)
+joystickBase.BackgroundTransparency = 0.5
+joystickBase.Parent = ScreenGui
 
--- スピードスライダー
-local sliderFrame = Instance.new("Frame", gui)
-sliderFrame.Size = UDim2.new(0,200,0,40)
-sliderFrame.Position = UDim2.new(0.05,0,0.7,0)
-sliderFrame.BackgroundColor3 = Color3.fromRGB(50,50,50)
-local sliderBar = Instance.new("Frame", sliderFrame)
-sliderBar.Size = UDim2.new(0.5,0,1,0)
-sliderBar.BackgroundColor3 = Color3.fromRGB(0,255,0)
+local joystickKnob = Instance.new("Frame")
+joystickKnob.Size = UDim2.new(0,50,0,50)
+joystickKnob.Position = UDim2.new(0.5,-25,0.5,-25)
+joystickKnob.BackgroundColor3 = Color3.fromRGB(0,255,0)
+joystickKnob.AnchorPoint = Vector2.new(0.5,0.5)
+joystickKnob.Parent = joystickBase
 
+-- 入力管理
+local moveVector = Vector3.zero
 local dragging = false
-sliderFrame.InputBegan:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
-		dragging = true
-	end
-end)
-sliderFrame.InputEnded:Connect(function(input)
-	dragging = false
-end)
-game:GetService("UserInputService").InputChanged:Connect(function(input)
-	if dragging and (input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseMovement) then
-		local ratio = math.clamp((input.Position.X - sliderFrame.AbsolutePosition.X)/sliderFrame.AbsoluteSize.X,0,1)
-		sliderBar.Size = UDim2.new(ratio,0,1,0)
-		speed = 20 + ratio*180
-	end
+
+joystickKnob.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+    end
 end)
 
--- Fly挙動
-runService.RenderStepped:Connect(function()
-	if flying then
-		local hum = char:FindFirstChild("Humanoid")
-		if hum then hum.PlatformStand = true end
-
-		local moveInput = hum.MoveDirection -- 左ジョイスティック入力
-		local camCF = cam.CFrame
-		local moveVector = (camCF.LookVector*moveInput.Z) + (camCF.RightVector*moveInput.X)
-
-		if moveVector.Magnitude > 0 then
-			velocity = velocity:Lerp(moveVector.Unit*speed,0.2)
-			hrp.CFrame = CFrame.new(hrp.Position, hrp.Position+moveVector)
-		else
-			velocity = velocity:Lerp(Vector3.zero,0.2)
-		end
-
-		hrp.Velocity = velocity
-	else
-		local hum = char:FindFirstChild("Humanoid")
-		if hum then hum.PlatformStand = false end
-		hrp.Velocity = Vector3.zero
-	end
+joystickKnob.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.Touch then
+        dragging = false
+        joystickKnob.Position = UDim2.new(0.5,-25,0.5,-25)
+        moveVector = Vector3.zero
+    end
 end)
+
+joystickKnob.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.Touch then
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+                joystickKnob.Position = UDim2.new(0.5,-25,0.5,-25)
+                moveVector = Vector3.zero
+            end
+        end)
+    end
+end)
+
+local UserInputService = game:GetService("UserInputService")
+
+UserInputService.InputChanged:Connect(function(input)
+    if dragging and input.UserInputType == Enum.UserInputType.Touch then
+        local delta = input.Position - joystickBase.AbsolutePosition - Vector2.new(75,75)
+        local radius = math.clamp(delta.Magnitude,0,50)
+        local direction = delta.Unit * radius
+        joystickKnob.Position = UDim2.new(0,75+direction.X-25,0,75+direction.Y-25)
+        moveVector = Vector3.new(direction.X,0,direction.Y).Unit
+    end
+end)
+
+-- Fly開始
+local function startFly()
+    flying = true
+    bv = Instance.new("BodyVelocity")
+    bv.MaxForce = Vector3.new(1e5,1e5,1e5)
+    bv.Velocity = Vector3.zero
+    bv.Parent = hrp
+
+    task.spawn(function()
+        while flying do
+            local cam = workspace.CurrentCamera
+            -- カメラ方向に合わせた移動
+            local camForward = Vector3.new(cam.CFrame.LookVector.X,0,cam.CFrame.LookVector.Z).Unit
+            local camRight = Vector3.new(cam.CFrame.RightVector.X,0,cam.CFrame.RightVector.Z).Unit
+            local dir = (camForward * moveVector.Z + camRight * moveVector.X)
+            if dir.Magnitude > 0 then
+                bv.Velocity = dir.Unit * speed
+            else
+                bv.Velocity = Vector3.zero
+            end
+            task.wait()
+        end
+    end)
+end
+
+-- Fly停止
+local function stopFly()
+    flying = false
+    if bv then
+        bv:Destroy()
+        bv = nil
+    end
+end
+
+-- メインタブ
+local MainTab = Window:MakeTab({Name = "Main", Icon = "", PremiumOnly = false})
+
+-- Flyトグル
+MainTab:AddToggle({
+    Name = "Fly ON/OFF",
+    Default = false,
+    Callback = function(Value)
+        if Value then
+            startFly()
+        else
+            stopFly()
+        end
+    end
+})
+
+-- Fly速度スライダー
+MainTab:AddSlider({
+    Name = "Fly Speed",
+    Min = 10,
+    Max = 200,
+    Default = speed,
+    Color = Color3.fromRGB(0,255,0),
+    Increment = 5,
+    ValueName = "Speed",
+    Callback = function(Value)
+        speed = Value
+    end
+})
+
+-- 閉じるボタン
+MainTab:AddButton({
+    Name = "Close UI",
+    Callback = function()
+
+        Window:Destroy()
+        ScreenGui:Destroy()
+    end
+})
+
+-- UI表示
+OrionLib:Init()
