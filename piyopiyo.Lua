@@ -1,150 +1,101 @@
--- Orion Library の読み込み
-local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/shlexware/Orion/main/source')))()
+--!strict
+--[[ 
+    Piyopiyo Hub
+    Author: najayou777
+    UI Library: Rayfield (https://github.com/shlexware/Rayfield)
+]]
+
+-- ライブラリの読み込み
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 -- ウィンドウ作成
-local Window = OrionLib:MakeWindow({
-    Name = "ぴよぴよ HUB",
-    HidePremium = false,
-    SaveConfig = true,
-    ConfigFolder = "PiyoPiyoHub",
-    IntroEnabled = true,
-    IntroText = "Made by najayou777"
+local Window = Rayfield:CreateWindow({
+   Name = "ぴよぴよはぶ",
+   LoadingTitle = "Piyopiyo Hub Loading...",
+   LoadingSubtitle = "by najayou777",
+   ConfigurationSaving = {
+      Enabled = true,
+      FolderName = "PiyopiyoHub",
+      FileName = "Config"
+   },
+   Discord = {
+      Enabled = false
+   },
+   KeySystem = false
 })
 
-------------------------------------------------
--- Player Tab
-------------------------------------------------
-local PlayerTab = Window:MakeTab({
-    Name = "Player",
-    Icon = "rbxassetid://4483345998",
-    PremiumOnly = false
+-- 📌 プレイヤータブ
+local PlayerTab = Window:CreateTab("プレイヤー", 4483362458)
+
+-- WalkSpeed スライダー
+PlayerTab:CreateSlider({
+   Name = "WalkSpeed",
+   Range = {16, 200},
+   Increment = 1,
+   CurrentValue = 16,
+   Flag = "WalkSpeed",
+   Callback = function(Value)
+       if game.Players.LocalPlayer.Character then
+           game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = Value
+       end
+   end,
 })
 
-PlayerTab:AddSlider({
-    Name = "WalkSpeed",
-    Min = 16,
-    Max = 200,
-    Default = 16,
-    Color = Color3.fromRGB(255,255,255),
-    Increment = 1,
-    ValueName = "Speed",
-    Callback = function(Value)
-        game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = Value
-    end    
+-- JumpPower スライダー
+PlayerTab:CreateSlider({
+   Name = "JumpPower",
+   Range = {50, 300},
+   Increment = 10,
+   CurrentValue = 50,
+   Flag = "JumpPower",
+   Callback = function(Value)
+       if game.Players.LocalPlayer.Character then
+           game.Players.LocalPlayer.Character.Humanoid.JumpPower = Value
+       end
+   end,
 })
 
-PlayerTab:AddSlider({
-    Name = "JumpPower",
-    Min = 50,
-    Max = 500,
-    Default = 50,
-    Color = Color3.fromRGB(255,255,255),
-    Increment = 5,
-    ValueName = "Power",
-    Callback = function(Value)
-        game.Players.LocalPlayer.Character.Humanoid.JumpPower = Value
-    end    
+-- 無限ジャンプ トグル
+PlayerTab:CreateToggle({
+   Name = "Infinite Jump",
+   CurrentValue = false,
+   Flag = "InfiniteJump",
+   Callback = function(Value)
+       _G.InfJump = Value
+   end,
 })
 
-PlayerTab:AddButton({
-    Name = "Fly (簡易版)",
+-- 無限ジャンプ処理
+game:GetService("UserInputService").JumpRequest:Connect(function()
+    if _G.InfJump then
+        local humanoid = game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            humanoid:ChangeState("Jumping")
+        end
+    end
+end)
+
+-- Fly トグル（ダミー）
+PlayerTab:CreateToggle({
+   Name = "Fly",
+   CurrentValue = false,
+   Flag = "Fly",
+   Callback = function(Value)
+       if Value then
+           Rayfield:Notify({Title = "ぴよぴよはぶ", Content = "Fly ON (デモ)", Duration = 3})
+       else
+           Rayfield:Notify({Title = "ぴよぴよはぶ", Content = "Fly OFF", Duration = 3})
+       end
+   end,
+})
+
+-- 📌 設定タブ
+local SettingsTab = Window:CreateTab("⚙️ 設定", 7072717697)
+
+SettingsTab:CreateButton({
+    Name = "設定を初期化",
     Callback = function()
-        print("Fly 起動（実装は簡易サンプル）")
-    end    
+        Rayfield:LoadConfiguration() -- 保存された設定を再ロード
+        Rayfield:Notify({Title="ぴよぴよはぶ", Content="設定を初期化しました", Duration=3})
+    end
 })
-
-PlayerTab:AddButton({
-    Name = "Reset Character",
-    Callback = function()
-        game.Players.LocalPlayer.Character:BreakJoints()
-    end    
-})
-
-------------------------------------------------
--- ESP Tab
-------------------------------------------------
-local EspTab = Window:MakeTab({
-    Name = "ESP",
-    Icon = "rbxassetid://6034287517",
-    PremiumOnly = false
-})
-
-EspTab:AddToggle({
-    Name = "名前表示",
-    Default = false,
-    Callback = function(Value)
-        print("ESP Name: " .. tostring(Value))
-    end    
-})
-
-EspTab:AddToggle({
-    Name = "体の枠 (Box ESP)",
-    Default = false,
-    Callback = function(Value)
-        print("ESP Box: " .. tostring(Value))
-    end    
-})
-
-EspTab:AddColorpicker({
-    Name = "ESPカラー",
-    Default = Color3.fromRGB(255, 0, 0),
-    Callback = function(Value)
-        print("ESP Color: ", Value)
-    end  
-})
-
-EspTab:AddSlider({
-    Name = "透明度",
-    Min = 0,
-    Max = 100,
-    Default = 50,
-    Color = Color3.fromRGB(255,255,255),
-    Increment = 5,
-    ValueName = "%",
-    Callback = function(Value)
-        print("ESP Transparency: " .. Value)
-    end    
-})
-
-------------------------------------------------
--- Settings Tab
-------------------------------------------------
-local SettingsTab = Window:MakeTab({
-    Name = "Settings",
-    Icon = "rbxassetid://6034509993",
-    PremiumOnly = false
-})
-
-SettingsTab:AddDropdown({
-    Name = "Language",
-    Default = "日本語",
-    Options = {"日本語", "English"},
-    Callback = function(Value)
-        print("Language set to: " .. Value)
-    end    
-})
-
-SettingsTab:AddColorpicker({
-    Name = "テーマカラー",
-    Default = Color3.fromRGB(44, 120, 224),
-    Callback = function(Value)
-        print("Theme Color: ", Value)
-    end  
-})
-
-SettingsTab:AddButton({
-    Name = "設定初期化",
-    Callback = function()
-        OrionLib:MakeNotification({
-            Name = "Reset",
-            Content = "設定が初期化されました",
-            Image = "rbxassetid://4483345998",
-            Time = 5
-        })
-    end    
-})
-
-------------------------------------------------
--- 起動
-------------------------------------------------
-OrionLib:Init()
